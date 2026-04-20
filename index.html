@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>dodeca · 12 artists, one space</title>
+<meta name="description" content="dodeca — a group exhibition of 12 artists at Gallery MOCD, April 19–27, 2026. A digital catalog of paintings, sculptures, and ceramics." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --paper:    #fbfaf5;   /* page face near-white */
+    --paper-2:  #f3eedd;   /* page edge warm cream */
+    --paper-3:  #e8e0ca;   /* deep edge */
+    --stage-1:  #f4efe2;   /* stage bg top */
+    --stage-2:  #e4dcc6;   /* stage bg bottom */
+    --ink:      #1a1a1a;
+    --ink-soft: #4a4a4a;
+    --accent:   #7a4a2a;   /* MOCD rust */
+    --accent-soft: #a07352;
+    --grid-ink: rgba(122, 74, 42, 0.055);
+    --cover:    #fbfaf5;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    overscroll-behavior: none;
+  }
+
+  body {
+    font-family: 'Inter', 'Helvetica Neue', 'Segoe UI', Arial, sans-serif;
+    background: radial-gradient(ellipse at 50% 30%, #ffffff 0%, #ffffff 75%), #663333;
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(12px, 3vw, 40px);
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: radial-gradient(rgba(122, 74, 42, 0.04) 1px, transparent 1px);
+    background-size: 3px 3px;
+    pointer-events: none;
+    mix-blend-mode: multiply;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: clamp(14px, 2.5vh, 28px);
+    color: var(--ink);
+  }
+  header .brand {
+    font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+    font-size: clamp(11px, 1.6vw, 13px);
+    letter-spacing: 0.55em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 500;
+  }
+  header .tag {
+    font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+    font-size: clamp(9px, 1.3vw, 11px);
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    margin-top: 8px;
+    color: var(--ink-soft);
+    opacity: 0.7;
+  }
+
+  /* ---------- Book ---------- */
+  /* Size to the smaller of: 96vw, available vertical space × aspect ratio, or a hard max.
+     --chrome-h reserves room for header + controls + body padding. */
+  .stage {
+    --chrome-h: 220px;
+    --aspect: calc(7 / 5);
+    perspective: 2600px;
+    perspective-origin: 50% 40%;
+    width: min(96vw, calc((100vh - var(--chrome-h)) * var(--aspect)), 1600px);
+    aspect-ratio: 7 / 5;
+    position: relative;
+    filter: drop-shadow(0 18px 28px rgba(60, 40, 20, 0.16));
+    transition: transform 0.36s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Closed-book state: show cover as centered portrait, hide the open-spread furniture. */
+  .stage.closed { transform: translateX(-25%); }
+  .stage.closed .base.left,
+  .stage.closed .spine,
+  .stage.closed .hitzone.prev {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+  .stage .base.left,
+  .stage .spine,
+  .stage .hitzone.prev {
+    transition: opacity 0.25s ease 0.12s;
+  }
+
+  .stage::after {
+    content: '';
+    position: absolute;
+    left: 6%; right: 6%;
+    bottom: -2.5%;
+    height: 5%;
+    background: radial-gradient(ellipse at center, rgba(60, 40, 20, 0.22), transparent 72%);
+    filter: blur(12px);
+    z-index: -1;
+  }
+
+  .book {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transform: rotateX(2deg);
+  }
+
+  /* Static base pages that live under the leaves */
+  .base {
+    position: absolute;
+    top: 0;
+    width: 50%;
+    height: 100%;
+    background: var(--paper);
+    background-image:
+      radial-gradient(ellipse at 50% 50%, var(--paper) 0%, var(--paper-2) 100%);
+  }
+  .base.left  { left: 0; box-shadow: inset -14px 0 20px -14px rgba(60,40,20,.28), inset 10px 0 16px -10px rgba(60,40,20,.12); }
+  .base.right { left: 50%; box-shadow: inset 14px 0 20px -14px rgba(60,40,20,.28), inset -10px 0 16px -10px rgba(60,40,20,.12); }
+
+  /* Spine — a soft 1px paper crease, not a cylinder. The bulk of the
+     spine-side depth is painted by .face::after on each page. */
+  .spine {
+    position: absolute;
+    top: 2%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 1px;
+    height: 96%;
+    background: linear-gradient(to bottom,
+      transparent 0%,
+      rgba(60, 40, 20, 0.09) 8%,
+      rgba(60, 40, 20, 0.11) 50%,
+      rgba(60, 40, 20, 0.09) 92%,
+      transparent 100%);
+    z-index: 50;
+    pointer-events: none;
+  }
+
+  /* Leaves (flippable pages) — pure single-axis turn, eased like paper. */
+  .leaf {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 50%;
+    height: 100%;
+    transform-origin: left center;
+    transform-style: preserve-3d;
+    transition: transform 0.36s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform;
+  }
+  .leaf.flipped { transform: rotateY(-180deg); }
+
+  .face {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    overflow: hidden;
+    background: var(--paper);
+    color: var(--ink);
+    display: flex;
+    flex-direction: column;
+  }
+  .face.back { transform: rotateY(180deg); }
+
+  /* Faint graph-paper grid for blank/image-backed faces */
+  .face.blank,
+  .face.image {
+    background-color: var(--paper);
+    background-image:
+      linear-gradient(to right, var(--grid-ink) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--grid-ink) 1px, transparent 1px);
+    background-size: 24px 24px, 24px 24px;
+  }
+
+  /* Dotted paper-noise overlay — only on blank faces (keeps art clean). */
+  .face.blank::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      radial-gradient(rgba(122, 74, 42, 0.045) 1px, transparent 1.2px),
+      radial-gradient(rgba(0,0,0,0.02) 1px, transparent 1.2px);
+    background-size: 4px 4px, 7px 7px;
+    background-position: 0 0, 2px 2px;
+    mix-blend-mode: multiply;
+    pointer-events: none;
+    opacity: .85;
+  }
+
+  /* Subtle spine-side shadow baked onto each face (light scene — softer). */
+  .face::after {
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0;
+    left: 0;
+    width: 45%;
+    background: linear-gradient(to right, rgba(60,40,20,.1), rgba(60,40,20,.02) 25%, transparent 60%);
+    pointer-events: none;
+    z-index: 3;
+  }
+  .face.back::after {
+    left: auto; right: 0;
+    background: linear-gradient(to left, rgba(60,40,20,.1), rgba(60,40,20,.02) 25%, transparent 60%);
+  }
+
+  /* Curl shadow — a spine-side gradient that peaks at 90° on each face. */
+  .shade {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0;
+    mix-blend-mode: multiply;
+    z-index: 4;
+  }
+  .face.front .shade {
+    background: linear-gradient(to right,
+      rgba(60,40,20,.55) 0%,
+      rgba(60,40,20,.22) 18%,
+      rgba(60,40,20,.06) 40%,
+      transparent 65%);
+  }
+  .face.back .shade {
+    background: linear-gradient(to left,
+      rgba(60,40,20,.55) 0%,
+      rgba(60,40,20,.22) 18%,
+      rgba(60,40,20,.06) 40%,
+      transparent 65%);
+  }
+
+  .leaf.flipping  .face.front .shade { animation: curlFront 0.36s linear forwards; }
+  .leaf.flipping  .face.back  .shade { animation: curlBack  0.36s linear forwards; }
+  .leaf.unflipping .face.front .shade { animation: curlBack  0.36s linear forwards; }
+  .leaf.unflipping .face.back  .shade { animation: curlFront 0.36s linear forwards; }
+
+  @keyframes curlFront {
+    0%   { opacity: 0; }
+    45%  { opacity: .45; }
+    55%  { opacity: .45; }
+    100% { opacity: .45; }
+  }
+  @keyframes curlBack {
+    0%   { opacity: .45; }
+    45%  { opacity: .45; }
+    55%  { opacity: .45; }
+    100% { opacity: 0; }
+  }
+
+  /* ---------- Page image ---------- */
+  .page-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+    display: block;
+    background: var(--paper);
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ---------- Controls ---------- */
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: clamp(14px, 2.5vw, 28px);
+    margin-top: clamp(16px, 3vh, 32px);
+    color: var(--ink);
+  }
+  .btn {
+    appearance: none;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    color: var(--ink-soft);
+    font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    padding: 0 6px;
+    height: 44px;
+    min-width: 44px;
+    cursor: pointer;
+    transition: color 0.2s ease, opacity 0.2s ease, transform 0.15s ease;
+    font-weight: 400;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    opacity: 0.75;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+  .btn .btn-arrow { font-size: 14px; letter-spacing: 0; line-height: 1; opacity: 0.9; }
+  .btn:hover:not(:disabled) {
+    color: var(--ink);
+    opacity: 1;
+  }
+  .btn:active:not(:disabled) { transform: translateY(1px); }
+  .btn:disabled { opacity: 0.22; cursor: default; }
+  .btn:focus-visible { outline: 1px solid var(--accent); outline-offset: 4px; border-radius: 2px; }
+
+  .counter {
+    font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.4em;
+    min-width: 72px;
+    text-align: center;
+    opacity: .75;
+    color: var(--ink);
+    font-weight: 400;
+  }
+
+  /* Click zones on the book itself */
+  .hitzone {
+    position: absolute;
+    top: 0;
+    width: 28%;
+    height: 100%;
+    z-index: 60;
+    cursor: pointer;
+    background: transparent;
+    border: 0;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .hitzone.prev { left: 0; }
+  .hitzone.next { right: 0; }
+  .hitzone:focus { outline: none; }
+
+  /* ---------- Mobile single-page book ---------- */
+  /* Same idea: fit to smaller of 92vw, available-height × 3/4, and a per-breakpoint cap. */
+  .mobile-stage {
+    --chrome-h: 180px;
+    display: none;
+    perspective: 2400px;
+    perspective-origin: 50% 40%;
+    width: min(92vw, calc((100vh - var(--chrome-h)) * 0.75), 520px);
+    aspect-ratio: 3 / 4;
+    position: relative;
+    filter: drop-shadow(0 16px 24px rgba(60, 40, 20, 0.2));
+  }
+  .mobile-stage::after {
+    content: '';
+    position: absolute;
+    left: 6%; right: 6%;
+    bottom: -3%;
+    height: 5%;
+    background: radial-gradient(ellipse at center, rgba(60,40,20,.22), transparent 72%);
+    filter: blur(10px);
+    z-index: -1;
+  }
+  .mobile-deck {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+  }
+  .mobile-deck::before {
+    /* Bottom page shown once the final card has flipped away */
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 50%, var(--paper) 0%, var(--paper-2) 100%);
+    box-shadow: inset 14px 0 20px -14px rgba(60,40,20,.28);
+  }
+  .mobile-deck::after {
+    /* Spine strip on the left edge */
+    content: '';
+    position: absolute;
+    top: -0.8%; bottom: -0.8%;
+    left: 0;
+    width: 8px;
+    background:
+      linear-gradient(to right,
+        rgba(60,40,20,.32) 0%,
+        rgba(60,40,20,.12) 40%,
+        rgba(255,255,255,.15) 60%,
+        transparent 100%);
+    z-index: 40;
+    pointer-events: none;
+  }
+  .m-leaf {
+    position: absolute;
+    inset: 0;
+    transform-origin: left center;
+    transform-style: preserve-3d;
+    transition: transform 0.36s cubic-bezier(0.4, 0, 0.2, 1);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    will-change: transform;
+  }
+  .m-leaf.flipped { transform: rotateY(-180deg); }
+  .m-leaf > .face {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+  /* Full 50/50 tap zones — entire card is interactive. */
+  .m-hit {
+    position: absolute;
+    top: 0;
+    width: 50%;
+    height: 100%;
+    z-index: 60;
+    cursor: pointer;
+    background: transparent;
+    border: 0;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .m-hit.prev { left: 0; }
+  .m-hit.next { right: 0; }
+  .m-hit:focus { outline: none; }
+
+  /* ---------- Responsive ---------- */
+  /* Tablet: 621–979px uses single-card deck for legibility */
+  @media (max-width: 979px) and (min-width: 621px) {
+    .stage { display: none; }
+    .mobile-stage {
+      display: block;
+      width: min(78vw, calc((100vh - 200px) * 0.75), 720px);
+    }
+    header .brand { letter-spacing: 0.48em; }
+  }
+
+  /* Mobile ≤ 620px */
+  @media (max-width: 620px) {
+    .stage { display: none; }
+    .mobile-stage {
+      display: block;
+      width: min(92vw, calc((100vh - 170px) * 0.75), 500px);
+    }
+    header .brand { letter-spacing: 0.4em; font-size: clamp(10px, 3vw, 12px); }
+    header .tag { font-size: clamp(8px, 2.4vw, 10px); letter-spacing: 0.22em; }
+    .controls { gap: clamp(10px, 3vw, 18px); margin-top: clamp(12px, 2.5vh, 20px); }
+    .btn {
+      padding: 0 14px;
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      height: 44px;
+      gap: 6px;
+    }
+    .counter { font-size: 10px; letter-spacing: 0.3em; min-width: 64px; }
+  }
+
+  /* Ultra-narrow: icon-only buttons for minimal chrome.
+     44×44 preserves the tap target, but the arrow glyph hugs the counter-facing
+     edge so it doesn't float in the middle of an empty tap zone. */
+  @media (max-width: 420px) {
+    .mobile-stage { width: min(94vw, calc((100vh - 160px) * 0.75)); }
+    .controls { gap: 6px; }
+    .btn .btn-label { display: none; }
+    .btn { padding: 0; width: 44px; height: 44px; gap: 0; opacity: 1; }
+    .btn.btn-prev { justify-content: flex-end;   padding-right: 4px; }
+    .btn.btn-next { justify-content: flex-start; padding-left: 4px; }
+    .btn .btn-arrow { font-size: 17px; opacity: 0.75; transition: opacity 0.2s ease; }
+    .btn:hover:not(:disabled) .btn-arrow,
+    .btn:active:not(:disabled) .btn-arrow { opacity: 1; }
+    .counter { min-width: 64px; letter-spacing: 0.22em; font-size: 10.5px; }
+  }
+
+  /* Short viewports (landscape phones / tiny laptops): trim chrome so the book still fits. */
+  @media (max-height: 560px) {
+    body { padding: 8px; }
+    header { margin-bottom: 6px; }
+    header .brand { font-size: 10px; }
+    header .tag { display: none; }
+    .controls { margin-top: 8px; }
+    .stage { --chrome-h: 130px; }
+    .mobile-stage { --chrome-h: 120px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .leaf, .m-leaf { transition: transform .4s linear; }
+    .shade { display: none; }
+  }
+
+  /* While a flip is in-flight, block every navigation control so rapid clicks
+     cannot stack up multiple page changes. */
+  body.nav-locked .btn,
+  body.nav-locked .hitzone,
+  body.nav-locked .m-hit {
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">DODECA</div>
+</header>
+
+<div class="stage" id="stage">
+  <div class="book" id="book">
+
+    <!-- Base pages (visible under the leaves) -->
+    <div class="base left"></div>
+    <div class="base right"></div>
+
+    <div class="spine"></div>
+
+    <!-- Leaves are injected by JS -->
+
+    <!-- Click zones -->
+    <button class="hitzone prev" id="hitPrev" aria-label="Previous page"></button>
+    <button class="hitzone next" id="hitNext" aria-label="Next page"></button>
+  </div>
+</div>
+
+<!-- Mobile single-page book (populated by JS) -->
+<div class="mobile-stage" id="mobileStage">
+  <div class="mobile-deck" id="mobileDeck"></div>
+  <button class="m-hit prev" id="mHitPrev" aria-label="Previous page"></button>
+  <button class="m-hit next" id="mHitNext" aria-label="Next page"></button>
+</div>
+
+<div class="controls">
+  <button class="btn btn-prev" id="btnPrev" aria-label="Previous page">
+    <span class="btn-arrow" aria-hidden="true">←</span><span class="btn-label">Prev</span>
+  </button>
+  <div class="counter" id="counter" aria-live="polite">00 / 13</div>
+  <button class="btn btn-next" id="btnNext" aria-label="Next page">
+    <span class="btn-label">Next</span><span class="btn-arrow" aria-hidden="true">→</span>
+  </button>
+</div>
+
+<script>
+  // ---------- Page data ----------
+  const PAGES = [
+    { src: 'WEBSITE/WEBSITE/1.jpg',  alt: 'Cover — dodeca, 12 artists one space, Gallery MOCD, April 19–27 2026' },
+    { src: 'WEBSITE/WEBSITE/2.jpg',  alt: 'Ashish Das — From Purusha to Prakriti and Omnipotent Embrace, bronze' },
+    { src: 'WEBSITE/WEBSITE/3.jpg',  alt: 'Ashish Das — Reaching for the Moon and The Wind Within Her, bronze' },
+    { src: 'WEBSITE/WEBSITE/4.jpg',  alt: 'Ashish Das — Soaring High (bronze); Purvi Sharma — Things you will see in my room 1' },
+    { src: 'WEBSITE/WEBSITE/5.jpg',  alt: 'Purvi Sharma — Things you will see in my room 2 and My room-1' },
+    { src: 'WEBSITE/WEBSITE/6.jpg',  alt: 'Purvi Sharma — My room-2 and My room 3; Parag Das — Scrolls of Taste' },
+    { src: 'WEBSITE/WEBSITE/7.jpg',  alt: 'Parag Das — Scrolls of Taste (two plates)' },
+    { src: 'WEBSITE/WEBSITE/8.jpg',  alt: 'Parag Das — Scrolls of Taste (two plates)' },
+    { src: 'WEBSITE/WEBSITE/9.jpg',  alt: 'Parag Das — Scrolls of Taste (two plates)' },
+    { src: 'WEBSITE/WEBSITE/10.jpg', alt: 'Kapil Jangid — Bajwa (two plates)' },
+    { src: 'WEBSITE/WEBSITE/11.jpg', alt: 'Himanshu Jamod — King Boat and Retrive-2' },
+    { src: 'WEBSITE/WEBSITE/12.jpg', alt: 'Vasudev M Nair — The Fall I, The Fall II, Make a Wish' },
+    { src: 'WEBSITE/WEBSITE/13.jpg', alt: 'Vasudev M Nair — All Too Bright and Cloud of Unknowing' },
+    { src: 'WEBSITE/WEBSITE/14.jpg', alt: 'Tanya Sharma — Pathway (two works) and THE IDEA OF YOU, ceramics' },
+    { src: 'WEBSITE/WEBSITE/15.jpg', alt: 'Tanya Sharma — I see you, ceramics (four works)' },
+    { src: 'WEBSITE/WEBSITE/16.jpg', alt: 'Tanya Sharma — I see you, ceramics (four works)' },
+    { src: 'WEBSITE/WEBSITE/17.jpg', alt: 'Tanya Sharma — I see you, ceramics (four works)' },
+    { src: 'WEBSITE/WEBSITE/18.jpg', alt: 'Shiv Shankar — The Last Tear, A Strange Spectacle, The Naked/Exposed Body' },
+    { src: 'WEBSITE/WEBSITE/19.jpg', alt: 'Nagajan Karavadara — Piro Mal, Kuvo, Mavthu' },
+    { src: 'WEBSITE/WEBSITE/20.jpg', alt: 'Nagajan Karavadara — Mavthu III and Mavthu II' },
+    { src: 'WEBSITE/WEBSITE/21.jpg', alt: 'Dugaprasad Bandi — Girl with Her Pet, Self in Mask-3, Self in Mask-2' },
+    { src: 'WEBSITE/WEBSITE/22.jpg', alt: 'Dugaprasad Bandi — Path Leads to War & Peace (two works)' },
+    { src: 'WEBSITE/WEBSITE/23.jpg', alt: 'Digvijay Jadeja — Collapse-2, Dream-2, Eidetic, Recall' },
+    { src: 'WEBSITE/WEBSITE/24.jpg', alt: 'Digvijay Jadeja — Bohemian and Drenched' },
+    { src: 'WEBSITE/WEBSITE/25.jpg', alt: 'Back cover — Gallery MOCD' },
+  ];
+
+  // ---------- Build desktop leaves (paired faces) ----------
+  // Pairs: leaf[i].front = PAGES[2i], leaf[i].back = PAGES[2i+1]
+  // 25 pages → 13 leaves; final leaf has a blank back.
+  function buildDesktopLeaves() {
+    const book = document.getElementById('book');
+    const spine = book.querySelector('.spine');
+    const leafCount = Math.ceil(PAGES.length / 2);
+    const frag = document.createDocumentFragment();
+    for (let i = 0; i < leafCount; i++) {
+      const leaf = document.createElement('div');
+      leaf.className = 'leaf';
+      leaf.dataset.index = String(i);
+
+      // FRONT face — always an image (pages 1,3,5,…,25)
+      const front = document.createElement('div');
+      front.className = 'face front image';
+      const frontPage = PAGES[i * 2];
+      const frontImg = document.createElement('img');
+      frontImg.className = 'page-img';
+      frontImg.src = frontPage.src;
+      frontImg.alt = frontPage.alt;
+      frontImg.loading = i === 0 ? 'eager' : 'lazy';
+      frontImg.decoding = 'async';
+      front.appendChild(frontImg);
+      const frontShade = document.createElement('div');
+      frontShade.className = 'shade';
+      front.appendChild(frontShade);
+
+      // BACK face — image if a PAGE exists, else blank paper
+      const back = document.createElement('div');
+      const backPage = PAGES[i * 2 + 1];
+      if (backPage) {
+        back.className = 'face back image';
+        const backImg = document.createElement('img');
+        backImg.className = 'page-img';
+        backImg.src = backPage.src;
+        backImg.alt = backPage.alt;
+        backImg.loading = i === 0 ? 'eager' : 'lazy';
+        backImg.decoding = 'async';
+        back.appendChild(backImg);
+      } else {
+        back.className = 'face back blank';
+      }
+      const backShade = document.createElement('div');
+      backShade.className = 'shade';
+      back.appendChild(backShade);
+
+      leaf.appendChild(front);
+      leaf.appendChild(back);
+      frag.appendChild(leaf);
+    }
+    // Insert all leaves right after the spine (before the hitzones).
+    spine.after(frag);
+  }
+
+  buildDesktopLeaves();
+
+  // ---------- Desktop flip logic ----------
+  const leaves = Array.from(document.querySelectorAll('#book > .leaf'));
+  const total  = leaves.length;
+  let current  = 0;
+  let busy     = false;
+
+  const stage   = document.getElementById('stage');
+  const btnPrev = document.getElementById('btnPrev');
+  const btnNext = document.getElementById('btnNext');
+  const hitPrev = document.getElementById('hitPrev');
+  const hitNext = document.getElementById('hitNext');
+  const counter = document.getElementById('counter');
+
+  // Start desktop with the book closed (cover only, centered).
+  stage.classList.add('closed');
+
+  // One-click-one-flip: lock the whole nav surface (buttons + hitzones + m-hits)
+  // for the duration of the flip animation plus a small buffer. Any click that
+  // lands during this window is swallowed by CSS pointer-events:none.
+  const FLIP_DURATION_MS = 360;        // matches .leaf / .m-leaf CSS transition
+  const LOCKOUT_MS       = 560;        // animation + ~200ms settle buffer
+  function lockNav() { document.body.classList.add('nav-locked'); }
+  function unlockNav() { document.body.classList.remove('nav-locked'); }
+
+  function updateZ() {
+    leaves.forEach((leaf, i) => {
+      if (i < current) {
+        leaf.style.zIndex = 10 + i;
+      } else {
+        leaf.style.zIndex = 10 + (total - i);
+      }
+    });
+  }
+
+  function flipNext() {
+    if (busy || current >= total) return;
+    busy = true;
+    lockNav();
+    // Opening the book from the cover — expand the stage alongside the first flip.
+    if (current === 0) stage.classList.remove('closed');
+    const leaf = leaves[current];
+    leaf.style.zIndex = 100;
+    leaf.classList.add('flipping');
+    void leaf.offsetWidth;
+    leaf.classList.add('flipped');
+    current++;
+    updateUI();
+    setTimeout(() => {
+      leaf.classList.remove('flipping');
+      updateZ();
+    }, FLIP_DURATION_MS + 40);
+    setTimeout(() => {
+      busy = false;
+      unlockNav();
+    }, LOCKOUT_MS);
+  }
+
+  function flipPrev() {
+    if (busy || current <= 0) return;
+    busy = true;
+    lockNav();
+    current--;
+    const leaf = leaves[current];
+    leaf.style.zIndex = 100;
+    leaf.classList.add('unflipping');
+    void leaf.offsetWidth;
+    leaf.classList.remove('flipped');
+    updateUI();
+    setTimeout(() => {
+      leaf.classList.remove('unflipping');
+      updateZ();
+      // Back to the cover — close the book again.
+      if (current === 0) stage.classList.add('closed');
+    }, FLIP_DURATION_MS + 40);
+    setTimeout(() => {
+      busy = false;
+      unlockNav();
+    }, LOCKOUT_MS);
+  }
+
+  // ---------- Mobile single-page deck ----------
+  const mobileDeck  = document.getElementById('mobileDeck');
+  const mobileStage = document.getElementById('mobileStage');
+  const mHitPrev    = document.getElementById('mHitPrev');
+  const mHitNext    = document.getElementById('mHitNext');
+
+  let mCards = [];
+  let mCurrent = 0;
+  let mTotal = 0;
+  let mBusy = false;
+
+  function buildMobileDeck() {
+    mobileDeck.innerHTML = '';
+    PAGES.forEach((page, i) => {
+      const card = document.createElement('div');
+      card.className = 'm-leaf';
+      const face = document.createElement('div');
+      face.className = 'face front image';
+      const img = document.createElement('img');
+      img.className = 'page-img';
+      img.src = page.src;
+      img.alt = page.alt;
+      img.loading = i < 2 ? 'eager' : 'lazy';
+      img.decoding = 'async';
+      face.appendChild(img);
+      card.appendChild(face);
+      mobileDeck.appendChild(card);
+    });
+    mCards = Array.from(mobileDeck.querySelectorAll('.m-leaf'));
+    mTotal = mCards.length;
+    mCurrent = 0;
+    updateMZ();
+  }
+
+  function updateMZ() {
+    mCards.forEach((c, i) => {
+      if (i < mCurrent) c.style.zIndex = 10 + i;
+      else              c.style.zIndex = 10 + (mTotal - i);
+    });
+  }
+
+  function mFlipNext() {
+    if (mBusy || mCurrent >= mTotal) return;
+    mBusy = true;
+    lockNav();
+    const card = mCards[mCurrent];
+    card.style.zIndex = 100;
+    card.classList.add('flipped');
+    mCurrent++;
+    updateUI();
+    setTimeout(() => { updateMZ(); }, FLIP_DURATION_MS + 40);
+    setTimeout(() => { mBusy = false; unlockNav(); }, LOCKOUT_MS);
+  }
+
+  function mFlipPrev() {
+    if (mBusy || mCurrent <= 0) return;
+    mBusy = true;
+    lockNav();
+    mCurrent--;
+    const card = mCards[mCurrent];
+    card.style.zIndex = 100;
+    card.classList.remove('flipped');
+    updateUI();
+    setTimeout(() => { updateMZ(); }, FLIP_DURATION_MS + 40);
+    setTimeout(() => { mBusy = false; unlockNav(); }, LOCKOUT_MS);
+  }
+
+  // ---------- Shared controls (mode-aware) ----------
+  // Viewport ≤ 979px uses the single-card mobile/tablet deck.
+  const isMobile = () => window.matchMedia('(max-width: 979px)').matches;
+
+  function next() { isMobile() ? mFlipNext() : flipNext(); }
+  function prev() { isMobile() ? mFlipPrev() : flipPrev(); }
+
+  function updateUI() {
+    const pad = n => String(n).padStart(2, '0');
+    if (isMobile()) {
+      btnPrev.disabled = mCurrent === 0;
+      btnNext.disabled = mCurrent === mTotal;
+      counter.textContent = `${pad(mCurrent)} / ${pad(mTotal)}`;
+    } else {
+      btnPrev.disabled = current === 0;
+      btnNext.disabled = current === total;
+      hitPrev.style.pointerEvents = current === 0 ? 'none' : 'auto';
+      hitNext.style.pointerEvents = current === total ? 'none' : 'auto';
+      counter.textContent = `${pad(current)} / ${pad(total)}`;
+    }
+  }
+
+  btnNext.addEventListener('click', next);
+  btnPrev.addEventListener('click', prev);
+  hitNext.addEventListener('click', flipNext);
+  hitPrev.addEventListener('click', flipPrev);
+  mHitNext.addEventListener('click', mFlipNext);
+  mHitPrev.addEventListener('click', mFlipPrev);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); next(); }
+    if (e.key === 'ArrowLeft')  { e.preventDefault(); prev(); }
+  });
+
+  // Basic swipe support
+  let touchX = null;
+  document.addEventListener('touchstart', e => { touchX = e.touches[0].clientX; }, { passive: true });
+  document.addEventListener('touchend', e => {
+    if (touchX == null) return;
+    const dx = e.changedTouches[0].clientX - touchX;
+    if (Math.abs(dx) > 40) { dx < 0 ? next() : prev(); }
+    touchX = null;
+  });
+
+  // Re-sync counter/controls when crossing the desktop/mobile breakpoint.
+  window.matchMedia('(max-width: 979px)').addEventListener('change', updateUI);
+
+  buildMobileDeck();
+  updateZ();
+  updateUI();
+</script>
+</body>
+</html>

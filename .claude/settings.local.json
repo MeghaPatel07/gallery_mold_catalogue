@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c ':*)",
+      "Bash(start \"\" \"index.html\")",
+      "Bash(npm --version)",
+      "Bash(npx --version)",
+      "Bash(node *)",
+      "Bash(npm install *)",
+      "Bash(npx playwright *)",
+      "Bash(npm run *)"
+    ]
+  }
+}
