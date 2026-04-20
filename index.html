@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>dodeca · 12 artists, one space</title>
 <meta name="description" content="dodeca — a group exhibition of 12 artists at Gallery MOCD, April 19–27, 2026. A digital catalog of paintings, sculptures, and ceramics." />
+<link rel="icon" type="image/png" href="dodeca.png" />
+<link rel="apple-touch-icon" href="dodeca.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
@@ -61,13 +63,12 @@
     margin-bottom: clamp(14px, 2.5vh, 28px);
     color: var(--ink);
   }
-  header .brand {
-    font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
-    font-size: clamp(11px, 1.6vw, 13px);
-    letter-spacing: 0.55em;
-    text-transform: uppercase;
-    color: var(--accent);
-    font-weight: 500;
+  header .brand-logo {
+    display: block;
+    margin: 0 auto;
+    height: clamp(34px, 4.8vw, 58px);
+    width: auto;
+    user-select: none;
   }
   header .tag {
     font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
@@ -445,7 +446,6 @@
       display: block;
       width: min(78vw, calc((100vh - 200px) * 0.75), 720px);
     }
-    header .brand { letter-spacing: 0.48em; }
   }
 
   /* Mobile ≤ 620px */
@@ -455,8 +455,7 @@
       display: block;
       width: min(92vw, calc((100vh - 170px) * 0.75), 500px);
     }
-    header .brand { letter-spacing: 0.4em; font-size: clamp(10px, 3vw, 12px); }
-    header .tag { font-size: clamp(8px, 2.4vw, 10px); letter-spacing: 0.22em; }
+    header .brand-logo { height: clamp(30px, 8.4vw, 44px); }
     .controls { gap: clamp(10px, 3vw, 18px); margin-top: clamp(12px, 2.5vh, 20px); }
     .btn {
       padding: 0 14px;
@@ -488,8 +487,7 @@
   @media (max-height: 560px) {
     body { padding: 8px; }
     header { margin-bottom: 6px; }
-    header .brand { font-size: 10px; }
-    header .tag { display: none; }
+    header .brand-logo { height: 26px; }
     .controls { margin-top: 8px; }
     .stage { --chrome-h: 130px; }
     .mobile-stage { --chrome-h: 120px; }
@@ -512,7 +510,7 @@
 <body>
 
 <header>
-  <div class="brand">DODECA</div>
+  <img class="brand-logo" src="dodeca.png" alt="dodeca" />
 </header>
 
 <div class="stage" id="stage">
