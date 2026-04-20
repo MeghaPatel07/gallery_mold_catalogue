@@ -92,7 +92,7 @@
     aspect-ratio: 7 / 5;
     position: relative;
     filter: drop-shadow(0 18px 28px rgba(60, 40, 20, 0.16));
-    transition: transform 0.36s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform 1.1s cubic-bezier(0.645, 0.045, 0.355, 1);
   }
 
   /* Closed-book state: show cover as centered portrait, hide the open-spread furniture. */
@@ -170,7 +170,7 @@
     height: 100%;
     transform-origin: left center;
     transform-style: preserve-3d;
-    transition: transform 0.36s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform 1.1s cubic-bezier(0.645, 0.045, 0.355, 1);
     will-change: transform;
   }
   .leaf.flipped { transform: rotateY(-180deg); }
@@ -253,10 +253,10 @@
       transparent 65%);
   }
 
-  .leaf.flipping  .face.front .shade { animation: curlFront 0.36s linear forwards; }
-  .leaf.flipping  .face.back  .shade { animation: curlBack  0.36s linear forwards; }
-  .leaf.unflipping .face.front .shade { animation: curlBack  0.36s linear forwards; }
-  .leaf.unflipping .face.back  .shade { animation: curlFront 0.36s linear forwards; }
+  .leaf.flipping  .face.front .shade { animation: curlFront 1.1s linear forwards; }
+  .leaf.flipping  .face.back  .shade { animation: curlBack  1.1s linear forwards; }
+  .leaf.unflipping .face.front .shade { animation: curlBack  1.1s linear forwards; }
+  .leaf.unflipping .face.back  .shade { animation: curlFront 1.1s linear forwards; }
 
   @keyframes curlFront {
     0%   { opacity: 0; }
@@ -409,7 +409,7 @@
     inset: 0;
     transform-origin: left center;
     transform-style: preserve-3d;
-    transition: transform 0.36s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform 1.1s cubic-bezier(0.645, 0.045, 0.355, 1);
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
     will-change: transform;
@@ -541,7 +541,7 @@
   <button class="btn btn-prev" id="btnPrev" aria-label="Previous page">
     <span class="btn-arrow" aria-hidden="true">←</span><span class="btn-label">Prev</span>
   </button>
-  <div class="counter" id="counter" aria-live="polite">00 / 13</div>
+  <div class="counter" id="counter" aria-live="polite">00 / 12</div>
   <button class="btn btn-next" id="btnNext" aria-label="Next page">
     <span class="btn-label">Next</span><span class="btn-arrow" aria-hidden="true">→</span>
   </button>
@@ -559,7 +559,7 @@
     { src: 'WEBSITE/WEBSITE/7.jpg',  alt: 'Parag Das — Scrolls of Taste (two plates)' },
     { src: 'WEBSITE/WEBSITE/8.jpg',  alt: 'Parag Das — Scrolls of Taste (two plates)' },
     { src: 'WEBSITE/WEBSITE/9.jpg',  alt: 'Parag Das — Scrolls of Taste (two plates)' },
-    { src: 'WEBSITE/WEBSITE/10.jpg', alt: 'Kapil Jangid — Bajwa (two plates)' },
+    { src: 'WEBSITE/WEBSITE/10.jpeg', alt: 'Kapil Jangid — Bajwa (two plates)' },
     { src: 'WEBSITE/WEBSITE/11.jpg', alt: 'Himanshu Jamod — King Boat and Retrive-2' },
     { src: 'WEBSITE/WEBSITE/12.jpg', alt: 'Vasudev M Nair — The Fall I, The Fall II, Make a Wish' },
     { src: 'WEBSITE/WEBSITE/13.jpg', alt: 'Vasudev M Nair — All Too Bright and Cloud of Unknowing' },
@@ -578,19 +578,35 @@
   ];
 
   // ---------- Build desktop leaves (paired faces) ----------
-  // Pairs: leaf[i].front = PAGES[2i], leaf[i].back = PAGES[2i+1]
-  // 25 pages → 13 leaves; final leaf has a blank back.
+  // 25 pages → 12 leaves carrying pages 1..24 (paired front/back).
+  // The 25th page is painted onto base.right so it's revealed as the right-side
+  // page when the last leaf is flipped past — yielding a final spread of
+  // page 24 (left) + page 25 (right) instead of an awkward blank end state.
   function buildDesktopLeaves() {
     const book = document.getElementById('book');
+    const baseRight = book.querySelector('.base.right');
     const spine = book.querySelector('.spine');
-    const leafCount = Math.ceil(PAGES.length / 2);
+    const leafCount = Math.floor(PAGES.length / 2);
+
+    // Final page → base.right background (shown only when no leaf covers it).
+    const finalPage = PAGES[PAGES.length - 1];
+    if (finalPage) {
+      baseRight.style.backgroundImage = `url('${finalPage.src}')`;
+      baseRight.style.backgroundSize = 'contain';
+      baseRight.style.backgroundPosition = 'center';
+      baseRight.style.backgroundRepeat = 'no-repeat';
+      baseRight.style.backgroundColor = 'var(--paper)';
+      baseRight.setAttribute('role', 'img');
+      baseRight.setAttribute('aria-label', finalPage.alt);
+    }
+
     const frag = document.createDocumentFragment();
     for (let i = 0; i < leafCount; i++) {
       const leaf = document.createElement('div');
       leaf.className = 'leaf';
       leaf.dataset.index = String(i);
 
-      // FRONT face — always an image (pages 1,3,5,…,25)
+      // FRONT face — pages 1, 3, 5, …, 23
       const front = document.createElement('div');
       front.className = 'face front image';
       const frontPage = PAGES[i * 2];
@@ -605,21 +621,17 @@
       frontShade.className = 'shade';
       front.appendChild(frontShade);
 
-      // BACK face — image if a PAGE exists, else blank paper
+      // BACK face — pages 2, 4, 6, …, 24 (always paired)
       const back = document.createElement('div');
+      back.className = 'face back image';
       const backPage = PAGES[i * 2 + 1];
-      if (backPage) {
-        back.className = 'face back image';
-        const backImg = document.createElement('img');
-        backImg.className = 'page-img';
-        backImg.src = backPage.src;
-        backImg.alt = backPage.alt;
-        backImg.loading = i === 0 ? 'eager' : 'lazy';
-        backImg.decoding = 'async';
-        back.appendChild(backImg);
-      } else {
-        back.className = 'face back blank';
-      }
+      const backImg = document.createElement('img');
+      backImg.className = 'page-img';
+      backImg.src = backPage.src;
+      backImg.alt = backPage.alt;
+      backImg.loading = i === 0 ? 'eager' : 'lazy';
+      backImg.decoding = 'async';
+      back.appendChild(backImg);
       const backShade = document.createElement('div');
       backShade.className = 'shade';
       back.appendChild(backShade);
@@ -653,8 +665,8 @@
   // One-click-one-flip: lock the whole nav surface (buttons + hitzones + m-hits)
   // for the duration of the flip animation plus a small buffer. Any click that
   // lands during this window is swallowed by CSS pointer-events:none.
-  const FLIP_DURATION_MS = 360;        // matches .leaf / .m-leaf CSS transition
-  const LOCKOUT_MS       = 560;        // animation + ~200ms settle buffer
+  const FLIP_DURATION_MS = 1100;       // matches .leaf / .m-leaf CSS transition
+  const LOCKOUT_MS       = 1300;       // animation + ~200ms settle buffer
   function lockNav() { document.body.classList.add('nav-locked'); }
   function unlockNav() { document.body.classList.remove('nav-locked'); }
 
@@ -756,7 +768,9 @@
   }
 
   function mFlipNext() {
-    if (mBusy || mCurrent >= mTotal) return;
+    // Cap at mTotal - 1 so the final card (last image) stays visible —
+    // never flip past it into the blank deck-base.
+    if (mBusy || mCurrent >= mTotal - 1) return;
     mBusy = true;
     lockNav();
     const card = mCards[mCurrent];
@@ -792,8 +806,9 @@
     const pad = n => String(n).padStart(2, '0');
     if (isMobile()) {
       btnPrev.disabled = mCurrent === 0;
-      btnNext.disabled = mCurrent === mTotal;
-      counter.textContent = `${pad(mCurrent)} / ${pad(mTotal)}`;
+      btnNext.disabled = mCurrent >= mTotal - 1;   // last card visible → no more nexts
+      // Counter as 1-indexed page number out of total pages.
+      counter.textContent = `${pad(mCurrent + 1)} / ${pad(mTotal)}`;
     } else {
       btnPrev.disabled = current === 0;
       btnNext.disabled = current === total;
